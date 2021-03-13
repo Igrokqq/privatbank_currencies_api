@@ -70,7 +70,6 @@ export default class CurrenciesRepository {
     await session.commitTransaction();
     session.endSession();
 
-    console.log('UPDATED HISTORY');
     return updateResponses;
   }
 }

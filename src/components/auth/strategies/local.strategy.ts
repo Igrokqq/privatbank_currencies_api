@@ -1,5 +1,5 @@
 import { Strategy } from 'passport-local';
-import { validate } from 'class-validator';
+import { validate, ValidationError } from 'class-validator';
 import { Request as ExpressRequest } from 'express';
 import { PassportStrategy } from '@nestjs/passport';
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
@@ -19,13 +19,13 @@ export default class LocalStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(req: ExpressRequest, email: string, password: string): Promise<ValidateUserOutput> {
-    const errors = await validate(new SignInDto(req.body));
+    const errors: ValidationError[] | [] = await validate(new SignInDto(req.body));
 
     if (errors.length > 0) {
       throw new BadRequestException(errors);
     }
 
-    const user = await this.authService.validateUser(email, password);
+    const user: ValidateUserOutput | null = await this.authService.validateUser(email, password);
 
     if (!user) {
       throw new UnauthorizedException();
