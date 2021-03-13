@@ -1,0 +1,78 @@
+version: "3"
+services:
+  app:
+    build:
+      context: .
+      dockerfile: ./docker/App.Dockerfile
+    container_name: app
+    command: bash -c "npm run dev"
+    volumes:
+      - ./:/var/www/app:cached
+      - /var/www/app/node_modules # anonymous volume for node_modules only
+    restart: always
+    ports:
+      - 3000:3000
+    links:
+      - mongo0
+      - mongo1
+      - mongo2
+      - redis
+
+#  mongodb:
+#    container_name: mongodb
+#    image: mongo:4.4
+#    restart: always
+#    ports:
+#      - 27017:27017
+  mongo0:
+    hostname: mongo0
+    container_name: mongo0
+    image: mongo:4.4
+    expose:
+      - 30000
+    ports:
+      - 30000:30000
+    volumes:
+      - 'mongodb_repl_data1:/data/db:z'
+    restart: always
+    command: "--bind_ip_all --replSet rs0 --port 30000"
+  mongo1:
+    hostname: mongo1
+    container_name: mongo1
+    image: mongo:4.4
+    expose:
+      - 30001
+    ports:
+      - 30001:30001
+    volumes:
+      - 'mongodb_repl_data2:/data/db:z'
+    restart: always
+    command: "--bind_ip_all --replSet rs0 --port 30001"
+  mongo2:
+    hostname: mongo2
+    container_name: mongo2
+    image: mongo:4.4
+    expose:
+      - 30002
+    ports:
+      - 30002:30002
+    volumes:
+      - 'mongodb_repl_data3:/data/db:z'
+    restart: always
+    command: "--bind_ip_all --replSet rs0 --port 30002"
+
+  redis:
+    image: redis:6
+    restart: always
+    ports:
+      - 6379:6379
+
+volumes:
+  mongodb_repl_data1:
+    external: true
+  mongodb_repl_data2:
+    external: true
+  mongodb_repl_data3:
+    external: true
+  redis_data:
+    driver: local
