@@ -1,31 +1,17 @@
-FROM ubuntu:latest
+FROM node:12-alpine
+
+ENV NODE_ENV development
 
 WORKDIR /var/www/app
+COPY . /var/www/app/
 
-# OS TOOLS
-RUN apt-get update && \
-apt-get install -y curl && \
-curl --version && \
-apt install -y python2 && \
-python2 -V && \
-apt install -y build-essential && \
-apt-get install -y manpages-dev && \
-gcc --version && \
-apt-get -y install make
+RUN apk --update add g++ gcc libgcc libstdc++ linux-headers make python bash
 
-COPY . .
+RUN npm install && npm install --quiet node-gyp -g
+RUN npm rebuild bcrypt --build-from-source
 
-## Install Node (with npm)
-RUN curl -sL https://deb.nodesource.com/setup_12.x | bash -
-RUN apt-get install -y \
- nodejs
-
-RUN npm install
-
-RUN npm rebuild bcrypt --build-from-source && \
-npm install -g node-gyp && \
-npm install -g @nestjs/cli
+RUN npm run build
 
 EXPOSE 3000
 
-CMD [ "npm", "run", "prod" ]
+CMD [ "npm", "run", "dev" ]

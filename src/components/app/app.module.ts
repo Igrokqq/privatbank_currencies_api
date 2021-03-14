@@ -1,5 +1,5 @@
 import * as Mongoose from 'mongoose';
-import { Module, Logger } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { RedisModule } from 'nestjs-redis';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -9,6 +9,7 @@ import CurrenciesModule from '@components/currencies/currencies.module';
 import UsersModule from '@components/users/users.module';
 import AppController from './app.controller';
 import AppService from './app.service';
+import ConsoleLogger from '../../shared/loggers/console.logger';
 
 @Module({
   imports: [
@@ -18,19 +19,19 @@ import AppService from './app.service';
     MongooseModule.forRoot(process.env.MONGODB_URL || '', {
       connectionFactory: (connection: Mongoose.Connection) => {
         connection.on('error', (error: any) => {
-          Logger.error(error);
+          ConsoleLogger.error(error);
         });
         connection.on('reconnectFailed', () => {
-          Logger.error('Reconnect to Mongodb has been failed');
+          ConsoleLogger.error('Reconnect to Mongodb has been failed');
         });
         connection.on('attemptReconnect', () => {
-          Logger.log('attempt to reconnect Mongodb');
+          ConsoleLogger.log('attempt to reconnect Mongodb');
         });
         connection.on('reconnect', () => {
-          Logger.log('reconnect to Mongodb');
+          ConsoleLogger.log('reconnect to Mongodb');
         });
         connection.on('open', () => {
-          Logger.log('Mongodb is connected successfully');
+          ConsoleLogger.log('Mongodb is connected successfully');
         });
 
         return connection;
@@ -50,16 +51,16 @@ import AppService from './app.service';
     RedisModule.register({
       url: `redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`,
       onClientReady: async (client: Redis): Promise<void> => {
-        client.on('error', Logger.error);
+        client.on('error', ConsoleLogger.error);
         client.on('ready', () => {
-          Logger.log(`redis is running on ${process.env.REDIS_PORT} port`);
+          ConsoleLogger.log(`redis is running on ${process.env.REDIS_PORT} port`);
         });
         client.on('restart', () => {
-          Logger.log('attempt to restart the redis server');
+          ConsoleLogger.log('attempt to restart the redis server');
         });
       },
       reconnectOnError: (error: Error) => {
-        Logger.error(error);
+        ConsoleLogger.error(error);
 
         return true;
       },
