@@ -21,14 +21,13 @@ import {
   ApiBadRequestResponse,
   ApiConflictResponse,
   ApiNoContentResponse,
-  ApiExtraModels,
-  getSchemaPath,
 } from '@nestjs/swagger';
 import { JwtService } from '@nestjs/jwt';
 import UsersService from '@components/users/users.service';
 import JwtAccessGuard from '@guards/jwt-access.guard';
 import { UserEntity } from '@components/users/schemas/users.schema';
 import RequestUser from '@decorators/request-user.decorator';
+import { LoginPayload } from '@components/auth/interfaces/login-payload.interface';
 import { DecodedUser } from './interfaces/decoded-user.interface';
 import LocalAuthGuard from './guards/local-auth.guard';
 import AuthService from './auth.service';
@@ -38,7 +37,6 @@ import SignUpDto from './dto/sign-up.dto';
 import JwtTokensDto from './dto/jwt-tokens.dto';
 
 @ApiTags('Auth')
-@ApiExtraModels(JwtTokensDto)
 @Controller()
 export default class AuthController {
   constructor(
@@ -49,14 +47,7 @@ export default class AuthController {
 
   @ApiBody({ type: SignInDto })
   @ApiOkResponse({
-    schema: {
-      type: 'object',
-      properties: {
-        data: {
-          $ref: getSchemaPath(JwtTokensDto),
-        },
-      },
-    },
+    type: JwtTokensDto,
     description: 'Returns jwt tokens',
   })
   @ApiBadRequestResponse({
@@ -103,6 +94,7 @@ export default class AuthController {
 
   @ApiBody({ type: SignUpDto })
   @ApiOkResponse({
+    type: UserEntity,
     description: '201, Success',
   })
   @ApiBadRequestResponse({
@@ -153,14 +145,7 @@ export default class AuthController {
   }
 
   @ApiOkResponse({
-    schema: {
-      type: 'object',
-      properties: {
-        data: {
-          $ref: getSchemaPath(JwtTokensDto),
-        },
-      },
-    },
+    type: JwtTokensDto,
     description: '200, returns new jwt tokens',
   })
   @ApiUnauthorizedResponse({
@@ -204,7 +189,7 @@ export default class AuthController {
       );
     }
 
-    const payload = {
+    const payload: LoginPayload = {
       id: decodedUser.id,
       email: decodedUser.email,
     };
@@ -213,6 +198,7 @@ export default class AuthController {
   }
 
   @ApiNoContentResponse({
+    type: 'object',
     description: 'no content',
   })
   @ApiUnauthorizedResponse({

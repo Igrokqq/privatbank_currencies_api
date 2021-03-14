@@ -8,37 +8,26 @@ import {
 import {
   ApiTags,
   ApiBearerAuth,
-  ApiExtraModels,
   ApiOkResponse,
-  getSchemaPath,
   ApiNotFoundResponse,
   ApiUnauthorizedResponse,
   ApiParam,
 } from '@nestjs/swagger';
 import JwtAccessGuard from '@guards/jwt-access.guard';
-import { UserEntity } from '@components/users/schemas/users.schema';
 import ParseCurrencyIdPipe from '@components/currencies/pipes/currency-id.pipe';
 import CurrenciesService from './currencies.service';
 import { Currency } from './interfaces/currency.interface';
-import { CurrenciesEntity } from './schemas/currencies.schema';
+import OutputCurrency from './types/output-currency.type';
 
 @ApiTags('Currencies')
 @ApiBearerAuth()
-@ApiExtraModels(UserEntity)
 @Controller()
 @UseGuards(JwtAccessGuard)
 export default class CurrenciesController {
   constructor(private readonly currenciesService: CurrenciesService) {}
 
   @ApiOkResponse({
-    schema: {
-      type: 'array',
-      properties: {
-        data: {
-          $ref: getSchemaPath(CurrenciesEntity),
-        },
-      },
-    },
+    type: [OutputCurrency],
     description: '200. Success. Returns an array of currencies or empty',
   })
   @ApiUnauthorizedResponse({
@@ -70,14 +59,7 @@ export default class CurrenciesController {
   }
 
   @ApiOkResponse({
-    schema: {
-      type: 'object',
-      properties: {
-        data: {
-          $ref: getSchemaPath(CurrenciesEntity),
-        },
-      },
-    },
+    type: OutputCurrency,
     description: '200. Success. Returns a Currency',
   })
   @ApiNotFoundResponse({
