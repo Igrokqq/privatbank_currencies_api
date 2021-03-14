@@ -8,8 +8,10 @@ import currenciesConstants from '../currencies.constants';
 @Injectable()
 export default class ParseCurrencyIdPipe implements PipeTransform {
   public transform(currency: string): string {
-    if (currenciesConstants.allowed.includes(currency)) {
-      return currency.toUpperCase();
+    const currencyInUpperCase: string = currency.toUpperCase();
+
+    if (currenciesConstants.allowed.includes(currencyInUpperCase)) {
+      return currency;
     }
 
     throw new BadRequestException(`
