@@ -2,6 +2,7 @@ import * as bcrypt from 'bcrypt';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import UsersRepository from '@components/users/users.repository';
+import { UserEntity } from '@components/users/schemas/users.schema';
 import { DecodedUser } from './interfaces/decoded-user.interface';
 import { ValidateUserOutput } from './interfaces/validate-user-output.interface';
 import { LoginPayload } from './interfaces/login-payload.interface';
@@ -16,17 +17,40 @@ export default class AuthService {
     private readonly authRepository: AuthRepository,
   ) {}
 
+  public async verifyToken(token: string, secret: string): Promise<DecodedUser | null> {
+    try {
+      return (await this.jwtService.verifyAsync(token, { secret })) as DecodedUser || null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  public async getUnexpiredRefreshTokens(email: string): Promise<string[]> {
+    const refreshTokens: string[] = await this.authRepository.getRefreshTokens(email);
+
+    return Promise.all(
+      refreshTokens.filter(async (refreshToken: string): Promise<boolean> => {
+        const verified: DecodedUser | null = await this.verifyToken(
+          refreshToken,
+          process.env.JWT_REFRESH_TOKEN_SECRET || '',
+        );
+
+        return !!verified;
+      }),
+    );
+  }
+
   public async validateUser(
     email: string,
     password: string,
   ): Promise<null | ValidateUserOutput> {
-    const user = await this.usersRepository.getByEmail(email);
+    const user: UserEntity | null = await this.usersRepository.getByEmail(email);
 
     if (!user) {
       throw new NotFoundException('The item does not exist');
     }
 
-    const passwordCompared = await bcrypt.compare(password, user.password);
+    const passwordCompared: boolean = await bcrypt.compare(password, user.password);
 
     if (passwordCompared) {
       return {
@@ -38,24 +62,23 @@ export default class AuthService {
     return null;
   }
 
-  public async login(data: LoginPayload): Promise<JwtTokensDto> {
-    const payload: LoginPayload = {
-      id: data.id,
-      email: data.email,
-    };
+  public async login(payload: LoginPayload): Promise<JwtTokensDto> {
+    const [accessToken, refreshToken]: [string, string] = await Promise.all([
+      this.jwtService.signAsync(payload, {
+        expiresIn: process.env.JWT_ACCESS_TOKEN_TTL,
+        secret: process.env.JWT_ACCESS_TOKEN_SECRET,
+      }),
+      this.jwtService.signAsync(payload, {
+        expiresIn: process.env.JWT_REFRESH_TOKEN_TTL,
+        secret: process.env.JWT_REFRESH_TOKEN_SECRET,
+      }),
+    ]);
 
-    const accessToken = this.jwtService.sign(payload, {
-      expiresIn: process.env.JWT_ACCESS_TOKEN_TTL,
-      secret: process.env.JWT_ACCESS_TOKEN_SECRET,
-    });
-    const refreshToken = this.jwtService.sign(payload, {
-      expiresIn: process.env.JWT_REFRESH_TOKEN_TTL,
-      secret: process.env.JWT_REFRESH_TOKEN_SECRET,
-    });
+    const unexpiredRefreshTokens: string[] = await this.getUnexpiredRefreshTokens(payload.email);
 
-    await this.authRepository.addRefreshToken(
-      payload.email as string,
-      refreshToken,
+    await this.authRepository.setRefreshTokens(
+      payload.email,
+      [...unexpiredRefreshTokens, refreshToken],
     );
 
     return {
@@ -64,19 +87,7 @@ export default class AuthService {
     };
   }
 
-  public getRefreshTokenByEmail(email: string): Promise<string | null> {
-    return this.authRepository.getToken(email);
-  }
-
-  public deleteTokenByEmail(email: string): Promise<number> {
-    return this.authRepository.removeToken(email);
-  }
-
-  public async verifyToken(token: string, secret: string): Promise<DecodedUser | null> {
-    try {
-      return (await this.jwtService.verifyAsync(token, { secret })) as DecodedUser | null;
-    } catch (error) {
-      return null;
-    }
+  public deleteTokenByEmail(email: string, refreshToken: string): Promise<number> {
+    return this.authRepository.removeToken(email, refreshToken);
   }
 }

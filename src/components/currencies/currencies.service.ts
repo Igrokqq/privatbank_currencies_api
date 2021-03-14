@@ -1,41 +1,39 @@
 import { Injectable } from '@nestjs/common';
 import fetch, { Response } from 'node-fetch';
-import { UpdateResponse } from '@interfaces/update-response.interface';
+import { classToPlain, plainToClass } from 'class-transformer';
+import CurrencyDto from './dto/currency.dto';
 import currenciesConstants from './currencies.constants';
 import CurrenciesRepository from './currencies.repository';
-import { Currency } from './interfaces/currency.interface';
 import { CurrencyApi } from './interfaces/currency-api.interface';
 
 @Injectable()
 export default class UsersService {
   constructor(private readonly currenciesRepository: CurrenciesRepository) {}
 
-  public updateHistory(currencies: Currency[]): Promise<UpdateResponse[]> {
+  public updateHistory(currencies: CurrencyDto[]): Promise<void> {
     return this.currenciesRepository.updateMany(currencies);
   }
 
-  public getAllHistoryForLastHour(): Promise<Currency[] | []> {
+  public getAllHistoryForLastHour(): Promise<CurrencyDto[]> {
     return this.currenciesRepository.getAllForLastHour();
   }
 
-  public getByIdFromHistoryForLastHour(currencyId: string): Promise<Currency | null> {
+  public getByIdFromHistoryForLastHour(currencyId: string): Promise<CurrencyDto | null> {
     return this.currenciesRepository.getByIdForLastHour(currencyId);
   }
 
-  public async getAllFromApi(): Promise<Currency[] | []> {
+  public async getAllFromApi(): Promise<CurrencyDto[]> {
     const response: Response = await fetch(currenciesConstants.endpoints.getAll);
-    const currencies: CurrencyApi[] | [] = await response.json();
+    const currencies: CurrencyApi[] = await response.json();
 
-    if (currencies.length === 0) {
+    if (!currencies.length) {
       return [];
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars,camelcase
-    return (currencies as CurrencyApi[]).map(({ base_ccy, ...currency }: CurrencyApi): Currency => ({
-      ...currency,
-      buy: Number(currency.buy),
-      sale: Number(currency.sale),
-      baseCcy: base_ccy,
-    }));
+    return currencies.map((currencyFromApi: CurrencyApi): CurrencyDto => {
+      return classToPlain(
+        plainToClass(CurrencyDto, currencyFromApi, { excludeExtraneousValues: true }),
+      ) as CurrencyDto;
+    });
   }
 }

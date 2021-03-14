@@ -8,11 +8,9 @@ import {
 } from 'class-validator';
 
 export default class SignInDto {
-  constructor(body: SignInDto | null = null) {
-    if (body) {
-      this.email = body.email;
-      this.password = body.password;
-    }
+  constructor(email: string = '', password: string = '') {
+    this.email = email;
+    this.password = password;
   }
 
   @ApiProperty({ type: String })

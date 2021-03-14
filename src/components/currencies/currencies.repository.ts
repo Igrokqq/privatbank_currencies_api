@@ -2,10 +2,9 @@ import moment from 'moment';
 import { ClientSession, Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { Injectable } from '@nestjs/common';
-import { UpdateResponse } from '@interfaces/update-response.interface';
+import CurrencyDto from './dto/currency.dto';
 import currenciesConstants from './currencies.constants';
 import { CurrenciesEntity } from './schemas/currencies.schema';
-import { Currency } from './interfaces/currency.interface';
 
 @Injectable()
 export default class CurrenciesRepository {
@@ -13,7 +12,7 @@ export default class CurrenciesRepository {
     @InjectModel(currenciesConstants.models.currencies) private currenciesModel: Model<CurrenciesEntity>,
   ) {}
 
-  public getAllForLastHour(): Promise<Currency[] | []> {
+  public getAllForLastHour(): Promise<CurrencyDto[]> {
     return this.currenciesModel.find({
       updatedAt: {
         $gt: moment.utc().subtract(1, 'hour').toDate(),
@@ -29,7 +28,7 @@ export default class CurrenciesRepository {
       .exec();
   }
 
-  public getByIdForLastHour(currencyId: string): Promise<Currency | null> {
+  public getByIdForLastHour(currencyId: string): Promise<CurrencyDto | null> {
     return this.currenciesModel.findOne({
       ccy: currencyId,
       updatedAt: {
@@ -46,30 +45,26 @@ export default class CurrenciesRepository {
       .exec();
   }
 
-  public async updateMany(currencies: Currency[]): Promise<UpdateResponse[] | []> {
+  public async updateMany(currencies: CurrencyDto[]): Promise<void> {
     const session: ClientSession = await this.currenciesModel.db.startSession();
-    session.startTransaction();
 
-    const promises = currencies.map((currency: Currency) => {
-      return this.currenciesModel.updateOne(
-        {
-          ccy: currency.ccy,
-        },
-        {
-          $set: currency,
-        },
-        {
-          session,
-          upsert: true,
-        },
-      );
+    await session.withTransaction(async (): Promise<void> => {
+      await Promise.all(currencies.map((currency: CurrencyDto) => {
+        return this.currenciesModel.updateOne(
+          {
+            ccy: currency.ccy,
+          },
+          {
+            $set: currency,
+          },
+          {
+            session,
+            upsert: true,
+          },
+        );
+      }));
     });
 
-    const updateResponses: UpdateResponse[] | [] = await Promise.all(promises);
-
-    await session.commitTransaction();
     session.endSession();
-
-    return updateResponses;
   }
 }

@@ -15,9 +15,8 @@ import {
 } from '@nestjs/swagger';
 import JwtAccessGuard from '@guards/jwt-access.guard';
 import ParseCurrencyIdPipe from '@components/currencies/pipes/currency-id.pipe';
+import CurrencyDto from '@components/currencies/dto/currency.dto';
 import CurrenciesService from './currencies.service';
-import { Currency } from './interfaces/currency.interface';
-import OutputCurrency from './types/output-currency.type';
 
 @ApiTags('Currencies')
 @ApiBearerAuth()
@@ -27,7 +26,7 @@ export default class CurrenciesController {
   constructor(private readonly currenciesService: CurrenciesService) {}
 
   @ApiOkResponse({
-    type: [OutputCurrency],
+    type: [CurrencyDto],
     description: '200. Success. Returns an array of currencies or empty',
   })
   @ApiUnauthorizedResponse({
@@ -40,16 +39,16 @@ export default class CurrenciesController {
     description: '401. UnauthorizedException.',
   })
   @Get('currencies')
-  public async getAll(): Promise<Currency[] | []> {
-    const currenciesFromHistory: Currency[] | [] = await this.currenciesService.getAllHistoryForLastHour();
+  public async getAll(): Promise<CurrencyDto[]> {
+    const currenciesFromHistory: CurrencyDto[] = await this.currenciesService.getAllHistoryForLastHour();
 
-    if (currenciesFromHistory.length > 0) {
+    if (currenciesFromHistory.length) {
       return currenciesFromHistory;
     }
 
-    const currenciesFromApi: Currency[] | [] = await this.currenciesService.getAllFromApi();
+    const currenciesFromApi: CurrencyDto[] = await this.currenciesService.getAllFromApi();
 
-    if (currenciesFromApi.length > 0) {
+    if (currenciesFromApi.length) {
       await this.currenciesService.updateHistory(currenciesFromApi);
 
       return currenciesFromApi;
@@ -59,7 +58,7 @@ export default class CurrenciesController {
   }
 
   @ApiOkResponse({
-    type: OutputCurrency,
+    type: CurrencyDto,
     description: '200. Success. Returns a Currency',
   })
   @ApiNotFoundResponse({
@@ -76,23 +75,23 @@ export default class CurrenciesController {
   })
   @ApiParam({ name: 'id', type: String })
   @Get('currency/:id')
-  public async getById(@Param('id', ParseCurrencyIdPipe) currencyId: string): Promise<Currency | never> {
-    const currencyFromHistory: Currency | null = await this.currenciesService.getByIdFromHistoryForLastHour(currencyId);
+  public async getById(@Param('id', ParseCurrencyIdPipe) currencyId: string): Promise<CurrencyDto | never> {
+    const currencyFromHistory: CurrencyDto | null = await this.currenciesService.getByIdFromHistoryForLastHour(currencyId);
 
     if (currencyFromHistory) {
       return currencyFromHistory;
     }
 
-    const currenciesFromApi: Currency[] | [] = await this.currenciesService.getAllFromApi();
+    const currenciesFromApi: CurrencyDto[] = await this.currenciesService.getAllFromApi();
 
-    if (currenciesFromApi.length > 0) {
-      const currency: Currency | undefined = currenciesFromApi.find((currencyFromApi: Currency) => currencyFromApi.ccy === currencyId);
-
+    if (currenciesFromApi.length) {
       await this.currenciesService.updateHistory(currenciesFromApi);
+    }
 
-      if (currency) {
-        return currency;
-      }
+    const currency: CurrencyDto | undefined = currenciesFromApi.find((currencyFromApi: CurrencyDto) => currencyFromApi.ccy === currencyId);
+
+    if (currency) {
+      return currency;
     }
 
     throw new NotFoundException('The currency was not found');

@@ -12,7 +12,7 @@ export default class AppService {
       : `${process.env.PROTOCOL}://${process.env.HOST}`;
   }
 
-  public getPort(): string | number {
-    return process.env.PORT || 3000;
+  public getPort(): number {
+    return Number(process.env.PORT) || 3000;
   }
 }

@@ -1,4 +1,3 @@
-import { ObjectID } from 'mongodb';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { Injectable } from '@nestjs/common';
@@ -19,12 +18,6 @@ export default class UsersRepository {
   public getByEmail(email: string): Promise<UserEntity | null> {
     return this.usersModel.findOne({
       email,
-    }).exec();
-  }
-
-  public getById(id: ObjectID): Promise<UserEntity | null> {
-    return this.usersModel.findOne({
-      _id: id,
     }).exec();
   }
 }

@@ -56,6 +56,7 @@ services:
     command: "--bind_ip_all --replSet rs0 --port 30002"
 
   redis:
+    container_name: redis
     image: redis:6
     restart: always
     ports:

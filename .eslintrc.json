@@ -21,6 +21,7 @@
             "error",
             150
         ],
+        "no-shadow": "off",
         "import/no-unresolved": "off",
         "no-useless-constructor": "off",
         "no-unused-vars": "off",
@@ -36,7 +37,8 @@
         "arrow-body-style": "off",
         "class-methods-use-this": "off",
         "no-underscore-dangle": "off",
-        "consistent-return": "off"
+        "consistent-return": "off",
+        "camelcase": "off"
     },
     "overrides": [
         {

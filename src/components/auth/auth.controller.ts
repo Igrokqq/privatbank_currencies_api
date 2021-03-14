@@ -27,7 +27,6 @@ import UsersService from '@components/users/users.service';
 import JwtAccessGuard from '@guards/jwt-access.guard';
 import { UserEntity } from '@components/users/schemas/users.schema';
 import RequestUser from '@decorators/request-user.decorator';
-import { LoginPayload } from '@components/auth/interfaces/login-payload.interface';
 import { DecodedUser } from './interfaces/decoded-user.interface';
 import LocalAuthGuard from './guards/local-auth.guard';
 import AuthService from './auth.service';
@@ -180,21 +179,19 @@ export default class AuthController {
       throw new ForbiddenException('Incorrect token');
     }
 
-    const oldRefreshToken: string | null = await this.authService.getRefreshTokenByEmail(decodedUser.email);
+    const oldRefreshTokens: string[] = await this.authService.getUnexpiredRefreshTokens(decodedUser.email);
 
     // if the old refresh token is not equal to request refresh token then this user is unauthorized
-    if (!oldRefreshToken || oldRefreshToken !== refreshTokenDto.refreshToken) {
+    if (!oldRefreshTokens.length || !oldRefreshTokens.includes(refreshTokenDto.refreshToken)) {
       throw new UnauthorizedException(
         'Authentication credentials were missing or incorrect',
       );
     }
 
-    const payload: LoginPayload = {
+    return this.authService.login({
       id: decodedUser.id,
       email: decodedUser.email,
-    };
-
-    return this.authService.login(payload);
+    });
   }
 
   @ApiNoContentResponse({
@@ -227,19 +224,20 @@ export default class AuthController {
   public async logout(@Param('token') token: string): Promise<{} | never> {
     const decodedUser: DecodedUser | null = await this.authService.verifyToken(
       token,
-      process.env.JWT_ACCESS_TOKEN_SECRET as string,
+      process.env.JWT_ACCESS_TOKEN_SECRET || '',
     );
 
     if (!decodedUser) {
       throw new ForbiddenException('Incorrect token');
     }
 
-    const deletedUsersCount = await this.authService.deleteTokenByEmail(
+    const deletedUsersCount: number = await this.authService.deleteTokenByEmail(
       decodedUser.email,
+      token,
     );
 
     if (deletedUsersCount === 0) {
-      throw new NotFoundException();
+      throw new NotFoundException('The user does not exist');
     }
 
     return {};

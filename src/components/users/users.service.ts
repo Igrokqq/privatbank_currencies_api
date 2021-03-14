@@ -1,6 +1,4 @@
 import * as bcrypt from 'bcrypt';
-
-import { ObjectID } from 'mongodb';
 import { Injectable } from '@nestjs/common';
 import SignUpDto from '@components/auth/dto/sign-up.dto';
 import authConstants from '@components/auth/auth.constants';
@@ -18,9 +16,5 @@ export default class UsersService {
       password: hashedPassword,
       email: user.email,
     });
-  }
-
-  public getById(id: ObjectID): Promise<UserEntity | null> {
-    return this.usersRepository.getById(id);
   }
 }
