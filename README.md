@@ -36,3 +36,13 @@ rs.initiate(config);
 ``` 
 mongo "mongodb://localhost:30000,localhost:30001,localhost:30002/?replicaSet=rs0"
 ```
+
+##### Check api
+``` 
+http://localhost:3000/ping
+```
+
+##### Check Documentation
+``` 
+http://localhost:3000/api
+```
