@@ -7,7 +7,7 @@ import CurrenciesRepository from './currencies.repository';
 import { CurrencyApi } from './interfaces/currency-api.interface';
 
 @Injectable()
-export default class UsersService {
+export default class CurrenciesService {
   constructor(private readonly currenciesRepository: CurrenciesRepository) {}
 
   public updateHistory(currencies: CurrencyDto[]): Promise<void> {
