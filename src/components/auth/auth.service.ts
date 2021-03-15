@@ -63,7 +63,11 @@ export default class AuthService {
   }
 
   public async login(payload: LoginPayload): Promise<JwtTokensDto> {
-    const [accessToken, refreshToken]: [string, string] = await Promise.all([
+    const [
+      accessToken,
+      refreshToken,
+      unexpiredRefreshTokens,
+    ]: [string, string, string[]] = await Promise.all([
       this.jwtService.signAsync(payload, {
         expiresIn: process.env.JWT_ACCESS_TOKEN_TTL,
         secret: process.env.JWT_ACCESS_TOKEN_SECRET,
@@ -72,9 +76,8 @@ export default class AuthService {
         expiresIn: process.env.JWT_REFRESH_TOKEN_TTL,
         secret: process.env.JWT_REFRESH_TOKEN_SECRET,
       }),
+      this.getUnexpiredRefreshTokens(payload.email),
     ]);
-
-    const unexpiredRefreshTokens: string[] = await this.getUnexpiredRefreshTokens(payload.email);
 
     await this.authRepository.setRefreshTokens(
       payload.email,
